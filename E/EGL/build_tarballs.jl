@@ -16,13 +16,13 @@ script = raw"""
 cd $WORKSPACE/srcdir/mesa/
 mkdir build
 cd build
-apk add py3-mako meson wayland-dev
+apk add py3-mako meson #wayland-dev
 
-# pkgconfig returns the wrong path here. It's an ugly hack, but it works
-mkdir -p /workspace/destdir/usr/bin/
-ln -s $(which wayland-scanner) /workspace/destdir/usr/bin/
+## pkgconfig returns the wrong path here. It's an ugly hack, but it works
+#mkdir -p /workspace/destdir/usr/bin/
+#ln -s $(which wayland-scanner) /workspace/destdir/usr/bin/
 
-meson -D egl=enabled -D gles1=enabled -D gles2=enabled -D platforms=wayland -D glx=disabled -D c_args="-Wno-implicit-function-declaration" ../ --cross-file="${MESON_TARGET_TOOLCHAIN}"
+meson -D egl=enabled -D gles1=disabled -D gles2=disabled -D platforms= -D glx=disabled -D c_args="-Wno-implicit-function-declaration" ../ --cross-file="${MESON_TARGET_TOOLCHAIN}"
 ninja -j${nproc}
 ninja install
 
@@ -33,17 +33,14 @@ install_license ../../copyright
 
 # These are the platforms we will build for by default, unless further
 # platforms are passed in on the command line
-platforms = [
-    Platform("x86_64", "linux"; libc="glibc"),
-    Platform("x86_64", "linux"; libc="musl"),
-]
+platforms = filter!(p ->Sys.islinux(p) || Sys.isfreebsd(p), supported_platforms())
 platforms = expand_cxxstring_abis(platforms)
 
 # The products that we will ensure are always built
 products = Product[
     LibraryProduct("libEGL", :libEGL),
-    LibraryProduct("libGLESv1_CM", :libGLESv1_CM),
-    LibraryProduct("libGLESv2", :libGLESv2),
+    #LibraryProduct("libGLESv1_CM", :libGLESv1_CM),
+    #LibraryProduct("libGLESv2", :libGLESv2),
     LibraryProduct("libvulkan_intel", :libvulkan_intel),
     LibraryProduct("libvulkan_lvp", :libvulkan_lvp),
     LibraryProduct("libvulkan_radeon", :libvulkan_radeon),
@@ -60,7 +57,7 @@ dependencies = Dependency[
     Dependency("Elfutils_jll"),
     Dependency("Expat_jll"; compat="~2.2.10"),
     Dependency("Zstd_jll"),
-    Dependency("Wayland_protocols_jll"),
+    #Dependency("Wayland_protocols_jll"),
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
