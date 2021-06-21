@@ -23,7 +23,7 @@ apk update
 apk upgrade --update-cache --available --latest || true
 apk add meson || true
 
-PKG_CONFIG_SYSROOT_DIR="" meson -D werror=false -D c_std=gnu11 ../ --cross-file="${MESON_TARGET_TOOLCHAIN}"
+meson -D werror=false -D c_std=gnu11 ../ --cross-file="${MESON_TARGET_TOOLCHAIN}"
 ninja -j${nproc}
 ninja install
 """
@@ -43,8 +43,7 @@ dependencies = Dependency[
     Dependency("Wayland_protocols_jll"),
     Dependency(PackageSpec(; name="EGL_jll", uuid="5ea76d86-d530-5cf4-b522-b01c04be50f5", path="/home/simeon/.julia/dev/EGL_jll")),
     Dependency("libdrm_jll"),
-    Dependency(PackageSpec(; name="libevdev_jll", uuid="2db6ffa8-e38f-5e21-84af-90c45d0032cc", path="/home/simeon/.julia/dev/libevdev_jll")),
-    Dependency(PackageSpec(; name="libinput_jll", uuid="36db933b-70db-51c0-b978-0f229ee0e533", path="/home/simeon/.julia/dev/libinput_jll")),
+    Dependency("libinput_jll"),
     Dependency("xkbcommon_jll"),
     Dependency("eudev_jll"),
     Dependency("Pixman_jll"),
@@ -52,4 +51,4 @@ dependencies = Dependency[
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
-build_tarballs(ARGS, name, version, sources, script, platforms, products, dependencies; preferred_gcc_version=v"7", julia_compat="1.6")
+build_tarballs(ARGS, name, version, sources, script, platforms, products, dependencies; julia_compat="1.6")
