@@ -3,12 +3,12 @@
 using BinaryBuilder, Pkg
 
 name = "opencl_kernel_profiler"
-version = v"0.0.109"
+version = v"0.0.110"
 
 # Collection of sources required to complete build
 sources = [
-    GitSource("https://github.com/rjodinchr/opencl-kernel-profiler",
-              "40e48f894bdce54866d2fb16d8cdb76c935f08df"),
+    GitSource("https://github.com/simeonschaub/opencl-kernel-profiler",
+              "922cd9ffd369877496dd61c3ce3100c1046945e9"),
     GitSource("https://github.com/google/perfetto",
               "2c4d2ffa7ff300e0b0feb8b8553e42afc7945870"),
 ]
@@ -42,6 +42,7 @@ products = [
 dependencies = [
     BuildDependency(PackageSpec(; name="OpenCL_Headers_jll", version=v"2024.10.24")),
     Dependency("OpenCL_jll"),
+    Dependency("SPIRV_Tools_jll"),
     HostBuildDependency(PackageSpec(; name="CMake_jll", version = v"3.24.3")),
 ]
 
