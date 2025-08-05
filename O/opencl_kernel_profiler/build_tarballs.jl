@@ -8,8 +8,8 @@ version = v"0.0.109"
 # Collection of sources required to complete build
 sources = [
     GitSource(
-        "https://github.com/rjodinchr/opencl-kernel-profiler",
-        "0ba158cf3018f25d363ff181e9a769c7e1d86b77"
+        "https://github.com/simeonschaub/opencl-kernel-profiler",
+        "a9066671eafca9ac66eeac98119f89ca1fbbccc5"
     ),
 ]
 
@@ -45,8 +45,8 @@ products = [
 
 # Dependencies that must be installed before this package can be built
 dependencies = [
-    BuildDependency(PackageSpec(; name = "OpenCL_Headers_jll", version = v"2024.10.24")),
-    Dependency("OpenCL_jll"),
+    BuildDependency(PackageSpec(; name = "OpenCL_Headers_jll", uuid = "a7aa756b-2b7f-562a-9e9d-e94076c5c8ee", path = "$(DEPOT_PATH[1])/dev/OpenCL_Headers_jll")),
+    Dependency(PackageSpec(; name = "OpenCL_jll", uuid = "6cb37087-e8b6-5417-8430-1f242f1e46e4", path = "$(DEPOT_PATH[1])/dev/OpenCL_Headers_jll")),
     Dependency("perfetto_jll"),
     Dependency("SPIRV_Tools_jll"),
     HostBuildDependency(PackageSpec(; name = "CMake_jll", version = v"3.24.3")),
