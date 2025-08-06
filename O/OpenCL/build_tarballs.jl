@@ -7,8 +7,8 @@ version = v"2024.10.24"
 
 # Collection of sources required to complete build
 sources = [
-    GitSource("https://github.com/KhronosGroup/OpenCL-ICD-Loader.git",
-              "5907ac1114079de4383cecddf1c8640e3f52f92b"),
+    GitSource("https://github.com/simeonschaub/OpenCL-ICD-Loader.git",
+              "f3bef2e7d8f97b610737685443669ce41ff593cd"),
 ]
 
 # Bash recipe for building across all platforms
