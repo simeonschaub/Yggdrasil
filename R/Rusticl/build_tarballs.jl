@@ -8,6 +8,8 @@ sources = [
     DirectorySource("./bundled"),
     GitSource("https://gitlab.freedesktop.org/mesa/mesa",
               "bac51d2931199a1e9048c7acdae155865732ad01"),  # HEAD, before Rusticl required VK_EXT_robustness2
+    GitSource("https://github.com/mesonbuild/meson",
+              "082917b40c8416bde925c64d22a2e60b2c059120"),
 ]
 
 # Bash recipe for building across all platforms
@@ -15,7 +17,7 @@ script = raw"""
 # we need meson 1.7+
 #apk add --upgrade meson --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 # XXX: upgrading via apk doesn't work due to python version mismatches
-pip install -U meson
+#pip install meson
 
 apk add py3-mako py3-yaml
 
@@ -65,7 +67,7 @@ MESON_FLAGS+=(-Dllvm=disabled)
 # TODO: support LLVM
 MESON_FLAGS+=(-Drusticl-enable-opencl-c=false)
 # Enable Gallium drivers
-MESON_FLAGS+=(-Dgallium-drivers=zink)
+MESON_FLAGS+=(-Dgallium-drivers=zink,radeonsi)
 # Embed libclc
 MESON_FLAGS+=(-Dstatic-libclc=all)
 
@@ -80,7 +82,7 @@ sed -i "/^\[binaries\]/a rust = '$target_rustc'" "${MESON_TARGET_TOOLCHAIN}"
 # meson doesn't forward the target environment to bindgen
 export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/$target/$target/sys-root"
 
-meson .. "${MESON_FLAGS[@]}"
+../../meson/meson.py .. "${MESON_FLAGS[@]}"
 
 ninja -j${nproc}
 ninja install
@@ -112,6 +114,7 @@ dependencies = [
     Dependency("SPIRV_Tools_jll"),
     Dependency("libdrm_jll"),       # XXX: can we get rid of this?
     Dependency("OpenCL_jll"),
+    Dependency("Elfutils_jll")
 ]
 
 init_block = raw"""
