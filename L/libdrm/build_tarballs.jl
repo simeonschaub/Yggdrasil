@@ -3,12 +3,12 @@
 using BinaryBuilder, Pkg
 
 name = "libdrm"
-version = v"2.4.125"
+version = v"2.4.127"
 
 # Collection of sources required to complete build
 sources = [
     ArchiveSource("https://dri.freedesktop.org/libdrm/libdrm-$version.tar.xz",
-                  "d4bae92797a50f81a93524762e0410a49cd84cfa0f997795bc0172ac8fb1d96a"),
+                  "051aeb3e542a57621018ffc443fb088dd69b78eef0ce4808b604ce0feac9f47f"),
     DirectorySource("./bundled"),
 ]
 
