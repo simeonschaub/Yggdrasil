@@ -15,7 +15,7 @@ sources = [
 
 # Bash recipe for building across all platforms
 script = raw"""
-export CXXFLAGS="${CXXFLAGS} -Wno-register" # cland C++17 expects the `register` storage class to be written as `REGISTER`
+export CXXFLAGS="${CXXFLAGS} -Wno-register" # clang C++17 expects the `register` storage class to be written as `REGISTER`
 
 # build LEMON
 cd $WORKSPACE/srcdir/lemon-*/

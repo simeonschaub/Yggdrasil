@@ -5,6 +5,7 @@
 #include <lemon/matching.h>
 #include <lemon/network_simplex.h>
 
+#include <cstdint>
 #include <functional>
 
 using namespace lemon;
@@ -13,6 +14,25 @@ using namespace std;
 std::string compiledebug()
 {
    return "baseline compilation works";
+}
+
+template<typename IntT>
+void register_network_simplex_type(jlcxx::Module& mod, const char* type_name)
+{
+  using NetworkSimplexT = NetworkSimplex<ListDigraph, IntT, IntT>;
+  mod.add_type<NetworkSimplexT>(type_name)
+    .constructor<const ListDigraph&>()
+    .method("lowerMap", [](NetworkSimplexT& ns, const ListDigraph::ArcMap<IntT>& map) -> NetworkSimplexT& { return ns.lowerMap(map); })
+    .method("upperMap", [](NetworkSimplexT& ns, const ListDigraph::ArcMap<IntT>& map) -> NetworkSimplexT& { return ns.upperMap(map); })
+    .method("costMap", [](NetworkSimplexT& ns, const ListDigraph::ArcMap<IntT>& map) -> NetworkSimplexT& { return ns.costMap(map); })
+    .method("supplyMap", [](NetworkSimplexT& ns, const ListDigraph::NodeMap<IntT>& map) -> NetworkSimplexT& { return ns.supplyMap(map); })
+    .method("stSupply", &NetworkSimplexT::stSupply)
+    .method("reset", &NetworkSimplexT::reset)
+    .method("resetParams", &NetworkSimplexT::resetParams)
+    .method("run", [](NetworkSimplexT& ns) { return static_cast<int>(ns.run()); })
+    .method("totalCost", static_cast<IntT (NetworkSimplexT::*)() const>(&NetworkSimplexT::totalCost))
+    .method("flow", &NetworkSimplexT::flow)
+    .method("potential", &NetworkSimplexT::potential);
 }
 
 namespace jlcxx
@@ -119,22 +139,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     .method("blossomSize", &MWPM::blossomSize)
     .method("blossomValue", &MWPM::blossomValue);
 
-  using NetworkSimplexInt = NetworkSimplex<ListDigraph, int, int>;
-  mod.add_type<NetworkSimplexInt>("NetworkSimplexListDigraphIntInt")
-    .constructor<const ListDigraph&>()
-    .method("lowerMap", [](NetworkSimplexInt& ns, const ListDigraph::ArcMap<int>& map) -> NetworkSimplexInt& { return ns.lowerMap(map); })
-    .method("upperMap", [](NetworkSimplexInt& ns, const ListDigraph::ArcMap<int>& map) -> NetworkSimplexInt& { return ns.upperMap(map); })
-    .method("costMap", [](NetworkSimplexInt& ns, const ListDigraph::ArcMap<int>& map) -> NetworkSimplexInt& { return ns.costMap(map); })
-    .method("supplyMap", [](NetworkSimplexInt& ns, const ListDigraph::NodeMap<int>& map) -> NetworkSimplexInt& { return ns.supplyMap(map); })
-    .method("stSupply", &NetworkSimplexInt::stSupply)
-    .method("reset", &NetworkSimplexInt::reset)
-    .method("resetParams", &NetworkSimplexInt::resetParams)
-    .method("run", [](NetworkSimplexInt& ns) { return static_cast<int>(ns.run()); })
-    .method("totalCost", static_cast<int (NetworkSimplexInt::*)() const>(&NetworkSimplexInt::totalCost))
-    .method("flow", &NetworkSimplexInt::flow)
-    .method("potential", &NetworkSimplexInt::potential);
+  register_network_simplex_type<int>(mod, "NetworkSimplexListDigraphIntInt");
+  register_network_simplex_type<std::int64_t>(mod, "NetworkSimplexListDigraphInt64Int64");
 
-  mod.method("NetworkSimplexProblemTypeInfeasible", []() { return static_cast<int>(NetworkSimplexInt::INFEASIBLE); });
-  mod.method("NetworkSimplexProblemTypeOptimal", []() { return static_cast<int>(NetworkSimplexInt::OPTIMAL); });
-  mod.method("NetworkSimplexProblemTypeUnbounded", []() { return static_cast<int>(NetworkSimplexInt::UNBOUNDED); });
+  using NetworkSimplexProblemTypes = NetworkSimplex<ListDigraph, int, int>;
+  mod.method("NetworkSimplexProblemTypeInfeasible", []() { return static_cast<int>(NetworkSimplexProblemTypes::INFEASIBLE); });
+  mod.method("NetworkSimplexProblemTypeOptimal", []() { return static_cast<int>(NetworkSimplexProblemTypes::OPTIMAL); });
+  mod.method("NetworkSimplexProblemTypeUnbounded", []() { return static_cast<int>(NetworkSimplexProblemTypes::UNBOUNDED); });
 }
