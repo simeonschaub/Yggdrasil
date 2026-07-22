@@ -11,6 +11,7 @@ sources = [
         "https://github.com/Xilinx/llvm-aie.git",
         "fb4dce4d1f515d590ae75233a0e88c8d00af977b", # upstream only does nightly releases, so just use the latest commit
     ),
+    DirectorySource("bundled"),
 ]
 
 # Build exactly what the upstream llvm-aie wheel builds, via its own CMake cache
@@ -30,6 +31,10 @@ sources = [
 # deposits the libc/crt under lib/<triple> where the driver looks.
 script = raw"""
 cd ${WORKSPACE}/srcdir/llvm-aie
+
+# Fix an AIE2P PreLegalizer combiner crash on loop-carried matmul accumulators
+# (matchConcatUnmergePhis missing a coverage check before rebuilding the concat).
+atomic_patch -p1 ../fix_prelegalizer.patch
 
 # llvm-libc's header generator (libc/utils/hdrgen) runs under the build image's
 # Python and imports PyYAML, which the base image lacks.

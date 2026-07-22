@@ -1,0 +1,21 @@
+diff --git a/llvm/lib/Target/AIE/AIECombinerHelper.cpp b/llvm/lib/Target/AIE/AIECombinerHelper.cpp
+index 99e970746443..5415aff4ae34 100644
+--- a/llvm/lib/Target/AIE/AIECombinerHelper.cpp
++++ b/llvm/lib/Target/AIE/AIECombinerHelper.cpp
+@@ -993,6 +993,16 @@ bool llvm::matchConcatUnmergePhis(MachineInstr &ConcatI,
+ 
+   assert(MatchInfo.NewConcatMBB);
+   assert(MatchInfo.UnmergeSourceReg);
++
++  // Only rewrite if the sub-vectors exactly cover the unmerge source; otherwise
++  // applyConcatUnmergePhis' buildMergeLikeInstr asserts.
++  unsigned CoveredBits = 0;
++  for (Register SubVec : MatchInfo.ConcatSubVecs)
++    CoveredBits += MRI.getType(SubVec).getSizeInBits().getFixedValue();
++  if (CoveredBits !=
++      MRI.getType(*MatchInfo.UnmergeSourceReg).getSizeInBits().getFixedValue())
++    return false;
++
+   return true;
+ }
+ 
