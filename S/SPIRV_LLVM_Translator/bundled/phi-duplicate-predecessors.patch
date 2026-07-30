@@ -1,8 +1,21 @@
 diff --git a/lib/SPIRV/SPIRVWriter.cpp b/lib/SPIRV/SPIRVWriter.cpp
-index a3bcaf97..3363a13f 100644
+index b135477c..7273a295 100644
 --- a/lib/SPIRV/SPIRVWriter.cpp
 +++ b/lib/SPIRV/SPIRVWriter.cpp
-@@ -2551,8 +2551,16 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
+@@ -2593,6 +2593,12 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
+                                LoopControl, Parameters, SuccessorTrue);
+       }
+     }
++    // Starting with SPIR-V 1.6, the True Label and False Label of an
++    // "OpBranchConditional" must not be the same, so emit an unconditional
++    // branch.
++    if (SuccessorTrue == SuccessorFalse)
++      return mapValue(V, BM->addBranchInst(SuccessorTrue, BB));
++
+     return mapValue(
+         V, BM->addBranchConditionalInst(transValue(Branch->getCondition(), BB),
+                                         SuccessorTrue, SuccessorFalse, BB));
+@@ -2647,8 +2653,16 @@ LLVMToSPIRVBase::transValueWithoutDecoration(Value *V, SPIRVBasicBlock *BB,
                                     FuncTransMode::Pointer);
        if (Val->getType() != Ty)
          Val = BM->addUnaryInst(OpBitcast, Ty, Val, BB);
@@ -23,20 +36,29 @@ index a3bcaf97..3363a13f 100644
    }
 diff --git a/test/phi-duplicate-predecessors.ll b/test/phi-duplicate-predecessors.ll
 new file mode 100644
-index 00000000..ad4cb0e5
+index 00000000..25539d61
 --- /dev/null
 +++ b/test/phi-duplicate-predecessors.ll
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,31 @@
 +; REQUIRES: spirv-dis
 +; RUN: llvm-as %s -o %t.bc
 +; RUN: llvm-spirv %t.bc -o %t.spv
 +; RUN: spirv-val %t.spv
-+; RUN: spirv-dis %t.spv | FileCheck %s
++; RUN: spirv-dis %t.spv | FileCheck %s --check-prefix=CHECK-SPIRV
++; RUN: llvm-spirv %t.spv -o %t.rev.bc -r --spirv-target-env=SPV-IR
++; RUN: llvm-dis %t.rev.bc -o %t.rev.ll
++; RUN: FileCheck --input-file=%t.rev.ll %s --check-prefix=CHECK-LLVM
 +
-+; CHECK: %entry = OpLabel
-+; CHECK: OpBranchConditional %[[NULL:[0-9]+]] %L815 %L815
-+; CHECK: %L815 = OpLabel
-+; CHECK: %v = OpPhi %ulong %ulong_0 %entry
++; CHECK-SPIRV: %[[Entry:[a-zA-Z0-9_]+]] = OpLabel
++; CHECK-SPIRV: OpBranch %[[Label:[a-zA-Z0-9_]+]]
++; CHECK-SPIRV: %[[Label]] = OpLabel
++; CHECK-SPIRV: %{{.*}} = OpPhi %{{.*}} %{{.*}} %[[Entry]]
++
++; CHECK-LLVM-LABEL: define spir_kernel void @f()
++; CHECK-LLVM:       [[Entry:[a-zA-Z0-9_]+]]:
++; CHECK-LLVM:       br label %[[Label:[a-zA-Z0-9_]+]]
++; CHECK-LLVM:       [[Label]]:
++; CHECK-LLVM:       %[[PHI:[a-zA-Z0-9_]+]] = phi i64 [ 0, %[[Entry]] ]
 +
 +target datalayout = "e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024-G1"
 +target triple = "spir64-unknown-unknown"

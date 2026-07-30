@@ -116,3 +116,5 @@ for (i,build) in enumerate(builds)
                    name, version, build.sources, get_script(llvm_version), [build.platform],
                    products, dependencies; preferred_gcc_version=v"10", julia_compat="1.6")
 end
+
+# trigger build
