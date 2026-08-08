@@ -3,19 +3,17 @@
 using BinaryBuilder, Pkg
 
 name = "AMDGPU_LLVM_Backend"
-version = v"22.1.8"
+version = v"23.0.0"
 
 # Collection of sources required to build AMDGPU_LLVM_Backend.
 # LLVM 22 ships a single monorepo source archive (`llvm-project-X.Y.Z.src.tar.xz`).
 sources = [
-    ArchiveSource("https://github.com/llvm/llvm-project/releases/download/llvmorg-$(version)/llvm-project-$(version).src.tar.xz",
-                  "922f1817a0df7b1489272d18134ee0087a8b068828f87ac63b9861b1a9965888"),
+    GitSource("https://github.com/ROCm/llvm-project",
+              "46fcb339fb61119b337f973c7ca9e710a319fdd0")
 ]
 
 # Bash recipe for building across all platforms
 script = raw"""
-mv llvm-project-* llvm-project
-
 cd llvm-project/llvm
 LLVM_SRCDIR=$(pwd)
 
@@ -25,18 +23,44 @@ install_license LICENSE.TXT
 # This is because LLVM's cross-compile setup is kind of borked, so we just
 # build the tools natively ourselves, directly.  :/
 
-# Build llvm-tblgen and llvm-config
+# Build llvm-tblgen and llvm-config, as well as a native clang so we can
+# compile the device libraries
 mkdir ${WORKSPACE}/bootstrap
 pushd ${WORKSPACE}/bootstrap
 CMAKE_FLAGS=()
-CMAKE_FLAGS+=(-DLLVM_TARGETS_TO_BUILD:STRING=host)
+# The device libraries only need clang to emit amdgcn bitcode, and
+# llvm-tblgen/llvm-config don't need a backend at all, so skip the host target
+CMAKE_FLAGS+=(-DLLVM_TARGETS_TO_BUILD:STRING=AMDGPU)
 CMAKE_FLAGS+=(-DLLVM_HOST_TRIPLE=${MACHTYPE})
 CMAKE_FLAGS+=(-DCMAKE_BUILD_TYPE=Release)
-CMAKE_FLAGS+=(-DLLVM_ENABLE_PROJECTS='llvm')
+CMAKE_FLAGS+=(-DLLVM_ENABLE_PROJECTS='clang')
+# Slim down the clang build: no static analyzer libs, no optional deps
+CMAKE_FLAGS+=(-DCLANG_ENABLE_STATIC_ANALYZER=OFF)
+CMAKE_FLAGS+=(-DLLVM_INCLUDE_TESTS=OFF)
+CMAKE_FLAGS+=(-DLLVM_INCLUDE_EXAMPLES=OFF)
+CMAKE_FLAGS+=(-DLLVM_INCLUDE_BENCHMARKS=OFF)
+CMAKE_FLAGS+=(-DLLVM_INCLUDE_DOCS=OFF)
+CMAKE_FLAGS+=(-DLLVM_ENABLE_ZLIB=OFF)
+CMAKE_FLAGS+=(-DLLVM_ENABLE_ZSTD=OFF)
+CMAKE_FLAGS+=(-DLLVM_ENABLE_LIBXML2=OFF)
 CMAKE_FLAGS+=(-DCMAKE_CROSSCOMPILING=False)
 CMAKE_FLAGS+=(-DCMAKE_TOOLCHAIN_FILE=${CMAKE_HOST_TOOLCHAIN})
 cmake -GNinja ${LLVM_SRCDIR} ${CMAKE_FLAGS[@]}
-ninja -j${nproc} llvm-tblgen llvm-config
+ninja -j${nproc} llvm-tblgen llvm-config clang llvm-link opt
+popd
+
+# Build the device libraries with the native bootstrap clang and install the
+# (target-independent) bitcode into $prefix
+mkdir ${WORKSPACE}/device-libs
+pushd ${WORKSPACE}/device-libs
+CMAKE_FLAGS=()
+CMAKE_FLAGS+=(-DCMAKE_BUILD_TYPE=Release)
+CMAKE_FLAGS+=(-DCMAKE_INSTALL_PREFIX=${prefix})
+CMAKE_FLAGS+=(-DCMAKE_PREFIX_PATH=${WORKSPACE}/bootstrap)
+CMAKE_FLAGS+=(-DCMAKE_CROSSCOMPILING=False)
+CMAKE_FLAGS+=(-DCMAKE_TOOLCHAIN_FILE=${CMAKE_HOST_TOOLCHAIN})
+cmake -GNinja ${LLVM_SRCDIR}/../amd/device-libs ${CMAKE_FLAGS[@]}
+ninja -j${nproc} install
 popd
 
 # Let's do the actual build within the `build` subdirectory
@@ -92,6 +116,7 @@ platforms = expand_cxxstring_abis(platforms)
 products = Product[
     ExecutableProduct("llc", :llc),
     ExecutableProduct("lld", :lld),
+    FileProduct("amdgcn/bitcode", :bitcode_path),
 ]
 
 # Dependencies that must be installed before this package can be built
